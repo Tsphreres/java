@@ -1,0 +1,56 @@
+import java.util.Scanner;
+
+public class ClassAttendanceTracker {
+    public static void main(String[] args) {
+        Scanner input = new Scanner(System.in);
+
+      
+        System.out.print("Enter total number of students in the class: ");
+        int totalStudents = input.nextInt();
+
+        int[] attendance = new int[30]; 
+
+        
+        String choice;
+        do {
+            System.out.print("\nEnter number of students present for Day " + (dayCount + 1) + ": ");
+            int present = input.nextInt();
+
+            if (present < 0 || present > totalStudents) {
+                System.out.println("Invalid number! Must be between 0 and " + totalStudents);
+                continue; 
+            }
+
+            attendance[dayCount] = present;
+            dayCount++;
+
+           
+            System.out.print("Do you want to enter attendance for another day? (yes/no): ");
+            choice = input.next();
+
+        } while (choice.equalsIgnoreCase("yes") && dayCount < 30);
+
+       
+        int totalAttendance = 0;
+        int lowDays = 0;
+
+        System.out.println("\n===== ATTENDANCE REPORT =====");
+        System.out.printf("%-10s %-15s%n", "Day", "Students Present");
+
+        for (int i = 0; i < dayCount; i++) {
+            System.out.printf("%-10d %-15d%n", (i + 1), attendance[i]);
+            totalAttendance += attendance[i];
+
+            if (attendance[i] < (totalStudents / 2.0)) {
+                lowDays++;
+            }
+        }
+
+        double average = (double) totalAttendance 
+        double lowPercent = ((double) lowDays 
+
+        System.out.println("\nAverage Attendance: " + String.format("%.2f", average));
+        System.out.println("Days with <50% attendance: " + lowDays + " (" + String.format("%.2f", lowPercent) + "%)");
+        
+    }
+}
