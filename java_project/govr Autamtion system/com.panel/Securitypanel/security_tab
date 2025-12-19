@@ -1,0 +1,639 @@
+package com.panel;
+
+import java.awt.Color;
+import java.awt.Component;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.BorderFactory;
+import javax.swing.JButton;
+import javax.swing.JComboBox;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
+import com.Form.LoginForm;
+import com.util.db;
+
+public class securtypanel extends JPanel implements ActionListener {
+    private JTable table;
+    private DefaultTableModel model;
+    private JButton dashboardBtn, addBtn, updateBtn, deleteBtn, loadBtn, logoutBtn;
+    private JTextField nameTxt, impactTxt, locationTxt;
+    private JComboBox<String> issuesComboBox;
+    private JFrame parentFrame;
+    private int selectedId = -1;
+    private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+    private SimpleDateFormat dateOnlyFormat = new SimpleDateFormat("yyyy-MM-dd");
+    private SimpleDateFormat timeOnlyFormat = new SimpleDateFormat("HH:mm:ss");
+
+    private final Color DARK_BLUE_BG = new Color(0, 0, 139); 
+    private final Color BLACK_TABLE_BG = Color.BLACK; 
+    private final Color WHITE_TEXT = Color.WHITE; 
+    private final Color YELLOW_TEXT = Color.YELLOW; 
+    private final Color GREEN_BUTTON = Color.GREEN; 
+    private final Color RED_BUTTON = new Color(200, 0, 0);
+
+    private final Color[] COLUMN_COLORS = {
+        new Color(50, 50, 100),    
+        new Color(100, 50, 50),    
+        new Color(50, 100, 50),    
+        new Color(100, 100, 50),   
+        new Color(100, 50, 100),   
+        new Color(50, 100, 100),   
+        new Color(100, 100, 100)   
+    };
+
+    private final Color[] HEADER_COLORS = {
+        new Color(0, 100, 0),      
+        new Color(0, 120, 0),      
+        new Color(0, 140, 0),      
+        new Color(0, 160, 0),      
+        new Color(0, 180, 0),      
+        new Color(0, 200, 0),      
+        new Color(0, 220, 0)       
+    };
+
+    public securtypanel(JFrame parentFrame) {
+        this.parentFrame = parentFrame;
+        setLayout(null);
+        setBackground(DARK_BLUE_BG);
+        createDashboardButton();
+        createLogoutButton();
+        initializeComponents();
+        loadSecurityData();
+    }
+
+    public securtypanel() {
+        this(null);
+    }
+
+    private void createDashboardButton() {
+        dashboardBtn = new JButton("RAPORO");
+        dashboardBtn.setBounds(20, 20, 120, 35);
+        dashboardBtn.setBackground(GREEN_BUTTON);
+        dashboardBtn.setForeground(Color.BLACK);
+        dashboardBtn.setFocusPainted(false);
+        dashboardBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        dashboardBtn.addActionListener(this);
+        add(dashboardBtn);
+    }
+
+    private void createLogoutButton() {
+        logoutBtn = new JButton("Gusohoka");
+        logoutBtn.setBounds(750, 20, 120, 35);
+        logoutBtn.setBackground(RED_BUTTON);
+        logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFocusPainted(false);
+        logoutBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        logoutBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logoutUser();
+            }
+        });
+        add(logoutBtn);
+    }
+
+    private void initializeComponents() {
+        JLabel titleLabel = new JLabel("Repuburi y'Urwanda");
+        titleLabel.setBounds(20, 70, 400, 30);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(18f));
+        titleLabel.setForeground(YELLOW_TEXT);
+        add(titleLabel);
+
+        final JLabel timeLabel = new JLabel("System Time: " + dateFormat.format(new Date()));
+        timeLabel.setBounds(500, 20, 300, 25);
+        timeLabel.setForeground(YELLOW_TEXT);
+        timeLabel.setFont(timeLabel.getFont().deriveFont(10f));
+        add(timeLabel);
+
+        javax.swing.Timer timer = new javax.swing.Timer(1000, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                timeLabel.setText("IGIHE: " + dateFormat.format(new Date()));
+            }
+        });
+        timer.start();
+
+        JLabel nameLabel = new JLabel("Amazina:");
+        nameLabel.setBounds(20, 120, 100, 25);
+        nameLabel.setForeground(YELLOW_TEXT);
+        add(nameLabel);
+        
+        nameTxt = new JTextField();
+        nameTxt.setBounds(130, 120, 200, 25);
+        nameTxt.setBackground(Color.WHITE);
+        nameTxt.setForeground(Color.BLACK);
+        nameTxt.setBorder(BorderFactory.createLineBorder(GREEN_BUTTON, 1));
+        add(nameTxt);
+
+        JLabel issuesLabel = new JLabel("IBYABAYE:");
+        issuesLabel.setBounds(20, 150, 100, 25);
+        issuesLabel.setForeground(YELLOW_TEXT);
+        add(issuesLabel);
+        
+        String[] issuesList = {"Habaye iki", "Accident", "Ubujura", "amakimbirane", "itera bwoba"};
+        issuesComboBox = new JComboBox<>(issuesList);
+        issuesComboBox.setBounds(130, 150, 200, 25);
+        issuesComboBox.setBackground(Color.WHITE);
+        issuesComboBox.setForeground(Color.BLACK);
+        issuesComboBox.setBorder(BorderFactory.createLineBorder(GREEN_BUTTON, 1));
+        add(issuesComboBox);
+
+        JLabel impactLabel = new JLabel("Ingaruka:");
+        impactLabel.setBounds(20, 180, 100, 25);
+        impactLabel.setForeground(YELLOW_TEXT);
+        add(impactLabel);
+        
+        impactTxt = new JTextField();
+        impactTxt.setBounds(130, 180, 200, 25);
+        impactTxt.setBackground(Color.WHITE);
+        impactTxt.setForeground(Color.BLACK);
+        impactTxt.setBorder(BorderFactory.createLineBorder(GREEN_BUTTON, 1));
+        add(impactTxt);
+
+        JLabel locationLabel = new JLabel("byabereyehe:");
+        locationLabel.setBounds(20, 210, 100, 25);
+        locationLabel.setForeground(YELLOW_TEXT);
+        add(locationLabel);
+        
+        locationTxt = new JTextField();
+        locationTxt.setBounds(130, 210, 200, 25);
+        locationTxt.setBackground(Color.WHITE);
+        locationTxt.setForeground(Color.BLACK);
+        locationTxt.setBorder(BorderFactory.createLineBorder(GREEN_BUTTON, 1));
+        add(locationTxt);
+
+        addBtn = new JButton("Gutanga raporo");
+        addBtn.setBounds(350, 150, 120, 30);
+        addBtn.setBackground(GREEN_BUTTON);
+        addBtn.setForeground(Color.BLACK);
+        addBtn.setFocusPainted(false);
+        addBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        addBtn.addActionListener(this);
+        add(addBtn);
+
+        updateBtn = new JButton("Gukosora");
+        updateBtn.setBounds(480, 150, 120, 30);
+        updateBtn.setBackground(GREEN_BUTTON);
+        updateBtn.setForeground(Color.BLACK);
+        updateBtn.setFocusPainted(false);
+        updateBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        updateBtn.addActionListener(this);
+        add(updateBtn);
+
+        deleteBtn = new JButton("Gusiba raporo");
+        deleteBtn.setBounds(610, 150, 120, 30);
+        deleteBtn.setBackground(GREEN_BUTTON);
+        deleteBtn.setForeground(Color.BLACK);
+        deleteBtn.setFocusPainted(false);
+        deleteBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        deleteBtn.addActionListener(this);
+        add(deleteBtn);
+
+        loadBtn = new JButton("Refresh Data");
+        loadBtn.setBounds(740, 150, 120, 30);
+        loadBtn.setBackground(GREEN_BUTTON);
+        loadBtn.setForeground(Color.BLACK);
+        loadBtn.setFocusPainted(false);
+        loadBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        loadBtn.addActionListener(this);
+        add(loadBtn);
+
+        String[] labels = {"nomero", "Amazina", "icyabaye", "Ingaruka", "byabayehe", "Itariki", "ryari(igihe)"};
+        model = new DefaultTableModel(labels, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
+        
+        table = new JTable(model);
+        table.setRowHeight(25);
+        table.setBackground(BLACK_TABLE_BG);
+        table.setForeground(WHITE_TEXT);
+        table.setGridColor(Color.GRAY);
+        table.setSelectionBackground(new Color(0, 100, 0));
+        table.setSelectionForeground(YELLOW_TEXT);
+        
+        table.setDefaultRenderer(Object.class, new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                
+                Component cell = super.getTableCellRendererComponent(table, value, 
+                        isSelected, hasFocus, row, column);
+                
+                if (!isSelected) {
+                    if (column < COLUMN_COLORS.length) {
+                        cell.setBackground(COLUMN_COLORS[column]);
+                    } else {
+                        cell.setBackground(Color.DARK_GRAY);
+                    }
+                    cell.setForeground(WHITE_TEXT);
+                } else {
+                    cell.setBackground(new Color(0, 100, 0));
+                    cell.setForeground(YELLOW_TEXT);
+                }
+                
+                return cell;
+            }
+        });
+        
+        JTableHeader header = table.getTableHeader();
+        header.setDefaultRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value,
+                    boolean isSelected, boolean hasFocus, int row, int column) {
+                
+                super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                
+                if (column < HEADER_COLORS.length) {
+                    setBackground(HEADER_COLORS[column]);
+                } else {
+                    setBackground(new Color(0, 150, 0));
+                }
+                
+                setForeground(Color.BLACK);
+                setFont(new Font("Arial", Font.BOLD, 12));
+                setHorizontalAlignment(JLabel.CENTER);
+                setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+                
+                return this;
+            }
+        });
+        
+        JScrollPane sp = new JScrollPane(table);
+        sp.setBounds(20, 250, 850, 350);
+        sp.getViewport().setBackground(BLACK_TABLE_BG);
+        sp.setBorder(BorderFactory.createLineBorder(GREEN_BUTTON, 2));
+        add(sp);
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                int selectedRow = table.getSelectedRow();
+                if (selectedRow >= 0) {
+                    selectedId = Integer.parseInt(model.getValueAt(selectedRow, 0).toString());
+                    nameTxt.setText(model.getValueAt(selectedRow, 1).toString());
+                    
+                    String issue = model.getValueAt(selectedRow, 2).toString();
+                    issuesComboBox.setSelectedItem(issue);
+                    
+                    impactTxt.setText(model.getValueAt(selectedRow, 3).toString());
+                    
+                    locationTxt.setText(model.getValueAt(selectedRow, 4).toString());
+                }
+            }
+        });
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == dashboardBtn) {
+            switchToDashboard();
+        } else if (e.getSource() == addBtn) {
+            addSecurityReport();
+        } else if (e.getSource() == updateBtn) {
+            updateSecurityReport();
+        } else if (e.getSource() == deleteBtn) {
+            deleteSecurityReport();
+        } else if (e.getSource() == loadBtn) {
+            loadSecurityData();
+        }
+    }
+
+    private void addSecurityReport() {
+        if (validateInput()) {
+            try (java.sql.Connection con = db.getConnection()) {
+                Date currentDateTime = new Date();
+                String reportDate = dateOnlyFormat.format(currentDateTime);
+                String reportTime = timeOnlyFormat.format(currentDateTime);
+                String fullTimestamp = dateFormat.format(currentDateTime);
+                
+                // FIRST: Check if there's at least one user in the database
+                String checkUserSql = "SELECT id FROM user LIMIT 1";
+                ResultSet userResult = con.createStatement().executeQuery(checkUserSql);
+                
+                if (userResult.next()) {
+                    // User exists, use that user's ID
+                    int userId = userResult.getInt("id");
+                    
+                    // Include ALL columns in the correct order
+                    String sql = "INSERT INTO security (security_name, issues, impact, location, report_date, report_time, reported_at, reported_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                    PreparedStatement ps = con.prepareStatement(sql);
+                    ps.setString(1, nameTxt.getText());
+                    ps.setString(2, issuesComboBox.getSelectedItem().toString());
+                    ps.setString(3, impactTxt.getText());
+                    ps.setString(4, locationTxt.getText());
+                    ps.setString(5, reportDate);
+                    ps.setString(6, reportTime);
+                    ps.setString(7, fullTimestamp);
+                    ps.setInt(8, userId); // Use the existing user ID
+                    
+                    int rowsAffected = ps.executeUpdate();
+                    if (rowsAffected > 0) {
+                        JOptionPane.showMessageDialog(this, 
+                            "Security report added successfully!\n" +
+                            "Automatically recorded at: " + fullTimestamp + 
+                            "\nReported by user ID: " + userId, 
+                            "Success", 
+                            JOptionPane.INFORMATION_MESSAGE);
+                        clearForm();
+                        loadSecurityData();
+                    }
+                } else {
+                    // No users exist in the database
+                    JOptionPane.showMessageDialog(this, 
+                        "Cannot add security report: No users found in the database.\n" +
+                        "Please add at least one user first.", 
+                        "No Users Found", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                
+                // Check if it's a foreign key constraint error
+                String errorMessage = ex.getMessage();
+                if (errorMessage.contains("foreign key constraint")) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Database Error: Foreign key constraint violation.\n" +
+                        "Possible solutions:\n" +
+                        "1. Run this SQL in your database:\n" +
+                        "   ALTER TABLE security MODIFY COLUMN reported_by INT NULL;\n" +
+                        "2. Make sure there's at least one user in the 'user' table\n" +
+                        "3. Or add a default user with INSERT INTO user (names, phone, password, role) VALUES ('Admin', '0780000000', 'admin123', 'admin');", 
+                        "Foreign Key Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, 
+                        "Error adding security report: " + ex.getMessage() + 
+                        "\n\nMake sure your database table has the correct structure.", 
+                        "Database Error", 
+                        JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        }
+    }
+
+    private void updateSecurityReport() {
+        if (selectedId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a report to update from the table.");
+            return;
+        }
+        
+        if (validateInput()) {
+            try (java.sql.Connection con = db.getConnection()) {
+                String sql = "UPDATE security SET security_name=?, issues=?, impact=?, location=? WHERE id=?";
+                PreparedStatement ps = con.prepareStatement(sql);
+                ps.setString(1, nameTxt.getText());
+                ps.setString(2, issuesComboBox.getSelectedItem().toString());
+                ps.setString(3, impactTxt.getText());
+                ps.setString(4, locationTxt.getText());
+                ps.setInt(5, selectedId);
+                
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(this, 
+                        "Security report updated successfully!\n" +
+                        "Original timestamp preserved.", 
+                        "Success", 
+                        JOptionPane.INFORMATION_MESSAGE);
+                    clearForm();
+                    loadSecurityData();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, 
+                    "Error updating security report: " + ex.getMessage(), 
+                    "Database Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void deleteSecurityReport() {
+        if (selectedId == -1) {
+            JOptionPane.showMessageDialog(this, "Please select a report to delete from the table.");
+            return;
+        }
+        
+        int confirm = JOptionPane.showConfirmDialog(this, 
+            "Are you sure you want to delete this security report?", 
+            "Confirm Delete", 
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            try (java.sql.Connection con = db.getConnection()) {
+                String sql = "DELETE FROM security WHERE id=?";
+                PreparedStatement ps = con.prepareStatement(sql);
+                ps.setInt(1, selectedId);
+                
+                int rowsAffected = ps.executeUpdate();
+                if (rowsAffected > 0) {
+                    JOptionPane.showMessageDialog(this, "Security report deleted successfully!");
+                    clearForm();
+                    loadSecurityData();
+                }
+            } catch (Exception ex) {
+                ex.printStackTrace();
+                JOptionPane.showMessageDialog(this, 
+                    "Error deleting security report: " + ex.getMessage(), 
+                    "Database Error", 
+                    JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void loadSecurityData() {
+        try (java.sql.Connection con = db.getConnection()) {
+            model.setRowCount(0);
+            
+            String sql = "SELECT id, security_name, issues, impact, location, report_date, report_time FROM security ORDER BY report_date DESC, report_time DESC";
+            ResultSet rs = con.createStatement().executeQuery(sql);
+            
+            int rowCount = 0;
+            while (rs.next()) {
+                rowCount++;
+                model.addRow(new Object[]{
+                    rs.getInt("id"),
+                    rs.getString("security_name"),
+                    rs.getString("issues"),
+                    rs.getString("impact"),
+                    rs.getString("location"),
+                    rs.getString("report_date"),
+                    rs.getString("report_time")
+                });
+            }
+            
+            if (rowCount == 0) {
+                JOptionPane.showMessageDialog(this, "No security reports found in the database.");
+            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, 
+                "Error loading security data: " + ex.getMessage() + 
+                "\n\nPlease check your database connection and table structure.", 
+                "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private boolean validateInput() {
+        if (nameTxt.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter security name.");
+            nameTxt.requestFocus();
+            return false;
+        }
+        if (issuesComboBox.getSelectedIndex() == 0) {
+            JOptionPane.showMessageDialog(this, "Please select an issue from the list.");
+            issuesComboBox.requestFocus();
+            return false;
+        }
+        if (impactTxt.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter impact level.");
+            impactTxt.requestFocus();
+            return false;
+        }
+        if (locationTxt.getText().trim().isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please enter location.");
+            locationTxt.requestFocus();
+            return false;
+        }
+        return true;
+    }
+
+    private void clearForm() {
+        nameTxt.setText("");
+        issuesComboBox.setSelectedIndex(0);
+        impactTxt.setText("");
+        locationTxt.setText("");
+        selectedId = -1;
+        table.clearSelection();
+    }
+
+    private void logoutUser() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (parentFrame != null) {
+                parentFrame.dispose();
+                openLoginForm();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Logged out successfully!",
+                    "Logout",
+                    JOptionPane.INFORMATION_MESSAGE);
+                System.exit(0);
+            }
+        }
+    }
+
+    private void openLoginForm() {
+        try {
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    LoginForm loginForm = new LoginForm();
+                    loginForm.setVisible(true);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error opening login form: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
+        }
+    }
+
+    private void switchToDashboard() {
+        if (parentFrame != null) {
+            parentFrame.getContentPane().removeAll();
+            
+            JPanel dashboardPanel = new dashboardpanel(parentFrame);
+            parentFrame.add(dashboardPanel);
+            
+            parentFrame.revalidate();
+            parentFrame.repaint();
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Dashboard panel would open here.", 
+                "Dashboard", 
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    private JPanel createSimpleDashboard() {
+        JPanel dashboardPanel = new JPanel();
+        dashboardPanel.setLayout(null);
+        dashboardPanel.setBackground(DARK_BLUE_BG);
+        
+        JLabel titleLabel = new JLabel("Dashboard - Security Management System");
+        titleLabel.setBounds(50, 50, 400, 30);
+        titleLabel.setFont(titleLabel.getFont().deriveFont(18f));
+        titleLabel.setForeground(YELLOW_TEXT);
+        dashboardPanel.add(titleLabel);
+        
+        JLabel welcomeLabel = new JLabel("Urakaza neza kuri Raporo!");
+        welcomeLabel.setBounds(50, 100, 300, 25);
+        welcomeLabel.setForeground(YELLOW_TEXT);
+        dashboardPanel.add(welcomeLabel);
+        
+        JLabel statsLabel = new JLabel("Kureba raporo y'umutekano");
+        statsLabel.setBounds(50, 150, 200, 25);
+        statsLabel.setForeground(YELLOW_TEXT);
+        dashboardPanel.add(statsLabel);
+        
+        JButton securityBtn = new JButton("Raporo y'umutekano");
+        securityBtn.setBounds(50, 200, 150, 30);
+        securityBtn.setBackground(GREEN_BUTTON);
+        securityBtn.setForeground(Color.BLACK);
+        securityBtn.setFocusPainted(false);
+        securityBtn.setBorder(BorderFactory.createLineBorder(Color.WHITE, 1));
+        securityBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                parentFrame.getContentPane().removeAll();
+                parentFrame.add(new securtypanel(parentFrame));
+                parentFrame.revalidate();
+                parentFrame.repaint();
+            }
+        });
+        dashboardPanel.add(securityBtn);
+        
+        return dashboardPanel;
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Repubuli y'Urwanda");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(900, 650);
+        
+        frame.getContentPane().setBackground(new Color(0, 0, 139));
+        
+        securtypanel panel = new securtypanel(frame);
+        frame.add(panel);
+        frame.setVisible(true);
+    }
+}
