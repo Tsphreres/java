@@ -1,0 +1,433 @@
+package com.panel;
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JTable;
+import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
+
+import com.Form.LoginForm;
+import com.util.db;
+
+public class dashboardpanel extends JPanel implements ActionListener {
+    private JTable table;
+    private DefaultTableModel model;
+    private JButton dashboardBtn;
+    private JButton contactBtn;
+    private JButton logoutBtn;
+    private JFrame parentFrame;
+
+    private final Color DARK_BLUE_BG = new Color(0, 0, 100);
+    private final Color YELLOW_FONT = new Color(255, 255, 0);
+    private final Color GREEN_BUTTON = new Color(0, 150, 0);
+    private final Color BLACK_TABLE_BG = Color.BLACK;
+    private final Color RED_BUTTON = new Color(200, 0, 0);
+    private final Color BLUE_BUTTON = new Color(0, 100, 200);
+
+    public dashboardpanel(JFrame parentFrame) {
+        this.parentFrame = parentFrame;
+        setLayout(null);
+        setBackground(DARK_BLUE_BG);
+        createDashboardButton();
+        createContactButton();
+        createLogoutButton();
+        initializeComponents();
+        loadSecurityData();
+    }
+
+    public dashboardpanel() {
+        this(null);
+    }
+
+    private void createDashboardButton() {
+        dashboardBtn = new JButton("raporo");
+        dashboardBtn.setBounds(20, 20, 120, 35);
+        dashboardBtn.setBackground(GREEN_BUTTON);
+        dashboardBtn.setForeground(Color.BLACK);
+        dashboardBtn.setFont(new Font("Arial", Font.BOLD, 12));
+        dashboardBtn.addActionListener(this);
+        add(dashboardBtn);
+    }
+
+    private void createContactButton() {
+        contactBtn = new JButton("Contact");
+        contactBtn.setBounds(150, 20, 120, 35);
+        contactBtn.setBackground(BLUE_BUTTON);
+        contactBtn.setForeground(Color.WHITE);
+        contactBtn.setFont(new Font("Arial", Font.BOLD, 12));
+        contactBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                showSelectedRowContact();
+            }
+        });
+        add(contactBtn);
+    }
+
+    private void createLogoutButton() {
+        logoutBtn = new JButton("Gusohoka");
+        logoutBtn.setBounds(750, 20, 120, 35);
+        logoutBtn.setBackground(RED_BUTTON);
+        logoutBtn.setForeground(Color.WHITE);
+        logoutBtn.setFont(new Font("Arial", Font.BOLD, 12));
+        logoutBtn.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                logoutUser();
+            }
+        });
+        add(logoutBtn);
+    }
+
+    private void initializeComponents() {
+        JLabel titleLabel = new JLabel("Raporo y'umutekano");
+        titleLabel.setBounds(20, 70, 300, 30);
+        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setForeground(YELLOW_FONT);
+        add(titleLabel);
+
+        String[] labels = {"nomero", "Izina", "Habaye iki", "Ingaruka", "Aho byabereye", "Itariki", "Igihe", "kubaza"};
+        model = new DefaultTableModel(labels, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return column == 7;
+            }
+            
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                if (columnIndex == 7) {
+                    return JButton.class;
+                }
+                return Object.class;
+            }
+        };
+        
+        table = new JTable(model);
+        table.setRowHeight(35);
+        table.setBackground(BLACK_TABLE_BG);
+        table.setForeground(Color.WHITE);
+        table.setGridColor(Color.GRAY);
+        table.setDefaultRenderer(Object.class, new CustomTableCellRenderer());
+        table.setDefaultEditor(JButton.class, null);
+        
+        JTableHeader header = table.getTableHeader();
+        header.setDefaultRenderer(new ColoredHeaderRenderer());
+        header.setBackground(Color.DARK_GRAY);
+        header.setForeground(YELLOW_FONT);
+        
+        JScrollPane sp = new JScrollPane(table);
+        sp.setBounds(20, 120, 850, 400);
+        sp.getViewport().setBackground(BLACK_TABLE_BG);
+        add(sp);
+
+        table.addMouseListener(new java.awt.event.MouseAdapter() {
+            @Override
+            public void mouseClicked(java.awt.event.MouseEvent e) {
+                int column = table.columnAtPoint(e.getPoint());
+                int row = table.rowAtPoint(e.getPoint());
+                
+                if (row >= 0 && column == 7) {
+                    int reportId = Integer.parseInt(table.getValueAt(row, 0).toString());
+                    showReporterContact(reportId);
+                }
+            }
+        });
+
+        JLabel infoLabel = new JLabel("");
+        infoLabel.setBounds(20, 100, 450, 20);
+        infoLabel.setFont(new Font("Arial", Font.PLAIN, 12));
+        infoLabel.setForeground(YELLOW_FONT);
+        add(infoLabel);
+    }
+
+    class CustomTableCellRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, Object value,
+                boolean isSelected, boolean hasFocus, int row, int column) {
+            
+            if (column == 7) {
+                JButton contactButton = new JButton("hamagara");
+                contactButton.setBackground(BLUE_BUTTON);
+                contactButton.setForeground(Color.WHITE);
+                contactButton.setFont(new Font("Arial", Font.BOLD, 11));
+                contactButton.setFocusPainted(false);
+                
+                if (isSelected) {
+                    contactButton.setBackground(new Color(0, 150, 255));
+                }
+                
+                return contactButton;
+            }
+            
+            java.awt.Component cell = super.getTableCellRendererComponent(
+                    table, value, isSelected, hasFocus, row, column);
+            
+            if (isSelected) {
+                cell.setBackground(new Color(50, 50, 100));
+                cell.setForeground(Color.YELLOW);
+            } else {
+                switch (column) {
+                    case 0:
+                        cell.setBackground(new Color(30, 30, 60));
+                        break;
+                    case 1:
+                        cell.setBackground(new Color(60, 30, 30));
+                        break;
+                    case 2:
+                        cell.setBackground(new Color(30, 60, 30));
+                        break;
+                    case 3:
+                        if (value != null) {
+                            String impact = value.toString().toLowerCase();
+                            switch (impact) {
+                                case "high":
+                                    cell.setBackground(new Color(80, 30, 30));
+                                    break;
+                                case "medium":
+                                    cell.setBackground(new Color(80, 80, 30));
+                                    break;
+                                case "low":
+                                    cell.setBackground(new Color(30, 80, 30));
+                                    break;
+                                default:
+                                    cell.setBackground(new Color(60, 30, 30));
+                            }
+                        } else {
+                            cell.setBackground(new Color(60, 30, 30));
+                        }
+                        break;
+                    case 4:
+                        cell.setBackground(new Color(60, 30, 60));
+                        break;
+                    case 5:
+                        cell.setBackground(new Color(30, 60, 60));
+                        break;
+                    case 6:
+                        cell.setBackground(new Color(60, 30, 60));
+                        break;
+                    default:
+                        cell.setBackground(Color.DARK_GRAY);
+                }
+                cell.setForeground(Color.WHITE);
+            }
+            
+            return cell;
+        }
+    }
+
+    class ColoredHeaderRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        private Color[] headerColors = {
+            new Color(0, 100, 0),
+            new Color(0, 120, 0),
+            new Color(0, 140, 0),
+            new Color(0, 160, 0),
+            new Color(0, 180, 0),
+            new Color(0, 200, 0),
+            new Color(0, 220, 0),
+            new Color(0, 100, 200)
+        };
+        
+        @Override
+        public java.awt.Component getTableCellRendererComponent(JTable table, 
+                Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            
+            if (column < headerColors.length) {
+                setBackground(headerColors[column]);
+            } else {
+                setBackground(GREEN_BUTTON);
+            }
+            setForeground(Color.BLACK);
+            setFont(getFont().deriveFont(Font.BOLD, 12));
+            setHorizontalAlignment(JLabel.CENTER);
+            
+            return this;
+        }
+    }
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == dashboardBtn) {
+            switchToDashboard();
+        }
+    }
+
+    private void loadSecurityData() {
+        try (java.sql.Connection con = db.getConnection()) {
+            model.setRowCount(0);
+            
+            String sql = "SELECT id, security_name, issues, impact, location, report_date, report_time FROM security ORDER BY report_date DESC, report_time DESC";
+            ResultSet rs = con.createStatement().executeQuery(sql);
+            
+            int rowCount = 0;
+            while (rs.next()) {
+                rowCount++;
+                model.addRow(new Object[]{
+                    rs.getInt("id"),
+                    rs.getString("security_name"),
+                    rs.getString("issues"),
+                    rs.getString("impact"),
+                    rs.getString("location"),
+                    rs.getDate("report_date"),
+                    rs.getTime("report_time"),
+                    "Contact"
+                });
+            }
+            
+            if (rowCount == 0) {
+                JOptionPane.showMessageDialog(this, "nta makuru aboneste.");
+            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, 
+                "Error loading security data: " + ex.getMessage(), 
+                "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void showSelectedRowContact() {
+        int selectedRow = table.getSelectedRow();
+        if (selectedRow == -1) {
+            JOptionPane.showMessageDialog(this, 
+                "Please select a report first!", 
+                "No Selection", 
+                JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
+        int reportId = Integer.parseInt(table.getValueAt(selectedRow, 0).toString());
+        showReporterContact(reportId);
+    }
+
+    private void showReporterContact(int reportId) {
+        try (java.sql.Connection con = db.getConnection()) {
+            String sql = "SELECT u.names, u.phone " +
+                        "FROM security s " +
+                        "JOIN user u ON s.reported_by = u.id " +
+                        "WHERE s.id = ?";
+            
+            PreparedStatement ps = con.prepareStatement(sql);
+            ps.setInt(1, reportId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                StringBuilder contactInfo = new StringBuilder();
+                contactInfo.append("=== Reporter Contact Information ===\n\n");
+                contactInfo.append("Reporter Name: ").append(rs.getString("names")).append("\n");
+                contactInfo.append("Phone Number: ").append(rs.getString("phone")).append("\n\n");
+                contactInfo.append("You can contact this person for more details about the incident.");
+                
+                JOptionPane.showMessageDialog(this, 
+                    contactInfo.toString(), 
+                    "Reporter Contact Information", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, 
+                    "No reporter information found for this report.\n" +
+                    "The report may have been submitted anonymously or reporter information is missing.", 
+                    "No Contact Information", 
+                    JOptionPane.INFORMATION_MESSAGE);
+            }
+            
+        } catch (Exception ex) {
+            ex.printStackTrace();
+            
+            String errorMessage = "Error retrieving reporter information: " + ex.getMessage() + 
+                "\n\nPlease check if:\n" +
+                "1. The 'users' table exists with 'names' and 'phone' columns\n" +
+                "2. The security table has a 'reported_by' column\n" +
+                "3. There's a user ID in 'reported_by' column for this report\n" +
+                "4. The database connection is working";
+            
+            JOptionPane.showMessageDialog(this, 
+                errorMessage, 
+                "Database Error", 
+                JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void logoutUser() {
+        int confirm = JOptionPane.showConfirmDialog(this,
+            "Are you sure you want to logout?",
+            "Confirm Logout",
+            JOptionPane.YES_NO_OPTION);
+        
+        if (confirm == JOptionPane.YES_OPTION) {
+            if (parentFrame != null) {
+                parentFrame.dispose();
+                openLoginForm();
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    "Logged out successfully!",
+                    "Logout",
+                    JOptionPane.INFORMATION_MESSAGE);
+                System.exit(0);
+            }
+        }
+    }
+
+    private void openLoginForm() {
+        try {
+            javax.swing.SwingUtilities.invokeLater(new Runnable() {
+                @Override
+                public void run() {
+                    LoginForm loginForm = new LoginForm();
+                    loginForm.setVisible(true);
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(null,
+                "Error opening login form: " + e.getMessage(),
+                "Error",
+                JOptionPane.ERROR_MESSAGE);
+            System.exit(0);
+        }
+    }
+
+    private void switchToDashboard() {
+        if (parentFrame != null) {
+            parentFrame.getContentPane().removeAll();
+            JPanel dashboardPanel = new JPanel();
+            dashboardPanel.setBackground(DARK_BLUE_BG);
+            JLabel label = new JLabel("murakaza neza kuri raporo y'umutekan0!");
+            label.setForeground(YELLOW_FONT);
+            dashboardPanel.add(label);
+            parentFrame.add(dashboardPanel);
+            parentFrame.revalidate();
+            parentFrame.repaint();
+        } else {
+            JOptionPane.showMessageDialog(this, 
+                "Dashboard functionality would open here.", 
+                "Dashboard", 
+                JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        JFrame frame = new JFrame("Repubuli y'Urwanda");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setSize(900, 600);
+        
+        frame.getContentPane().setBackground(new Color(0, 0, 100));
+        
+        dashboardpanel panel = new dashboardpanel(frame);
+        frame.add(panel);
+        frame.setVisible(true);
+    }
+}
